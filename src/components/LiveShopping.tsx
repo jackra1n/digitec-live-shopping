@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import "./LiveShopping.css"
 
 const digitecFetchUrl = import.meta.env.VITE_PROXIED_API_URL;
 
@@ -47,36 +48,31 @@ const bodyContent = JSON.stringify(gqlBody);
 
 function LiveShopping() {
 
-  const [state, setState] = useState({ products: [], dataIsLoaded: false })
+  const [products, setProducts] = useState([])
 
   useEffect(() => {
-    if (!state.dataIsLoaded) {
-      console.log("fetching data from: " + digitecFetchUrl);
-      fetch(digitecFetchUrl, {
-        method: "POST",
-        body: bodyContent,
-        headers: headersList
-      })
-        .then(response => response.json())
-        .then(data => {
-          setState({
-            products: data.data.socialShopping.items,
-            dataIsLoaded: true
-          });
-        })
-    }
-  })
+    console.log("fetching data from: " + digitecFetchUrl);
+    fetch(digitecFetchUrl, {
+      method: "POST",
+      body: bodyContent,
+      headers: headersList
+    })
+    .then(response => response.json())
+    .then(data => setProducts(data.data.socialShopping.items));
+    }, []);
 
-  if (!state.dataIsLoaded) {
+  if (products.length === 0) {
     return <div>Loading...</div>;
   }
   return (
-    <div className="card">
-      {state.products.map((item: any) => (
+    <div className="main-container">
+      <div className="card">
+      {products.map((item: any) => (
         <div>
           <p><b>{item.userName}</b> bought <b>{item.fullProductName}</b> from <b>{item.brandName}</b></p>
         </div>
       ))}
+      </div>
     </div>
   )
 }
