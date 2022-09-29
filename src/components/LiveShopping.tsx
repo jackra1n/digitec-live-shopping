@@ -62,7 +62,7 @@ function LiveShopping() {
     }, []);
 
   if (products.length === 0) {
-    return <div>Loading...</div>;
+    return <div className="main-container"><div className="card"><div style={{ textAlign: "center"}}>Loading...</div></div></div>;
   }
   return (
     <div className="main-container">
