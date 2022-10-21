@@ -69,7 +69,8 @@ let payload = {
 function LiveShopping() {
   let ws_connection = new WebSocket("wss://www.digitec.ch/api/subscriptions", "graphql-ws");
   
-  const [products, setProducts] = useState<Object[]>([]);
+  const [products, setProducts] = useState([] as any);
+  const [wsSubscribed, setWsSubscribed] = useState(false);
 
   useEffect(() => {
     console.log("fetching data from: " + digitecFetchUrl);
@@ -81,36 +82,39 @@ function LiveShopping() {
     .then(response => response.json())
     .then(data => setProducts(data.data.socialShopping.items));
   }, []);
-  
-  
-  ws_connection.onopen = function () {
-    ws_connection.send(JSON.stringify({ type: GQL.CONNECTION_INIT, payload: { portalId: 25, mandator: 406802, country: "ch", culture: "en-US" }}));
-  };
 
-  ws_connection.onmessage = function (event) {
-    const data = JSON.parse(event.data)
-    switch (data.type) {
-      case GQL.CONNECTION_ACK: {
-        ws_connection.send(JSON.stringify({
-          id: "1",
-          type: GQL.START,
-          payload
-        }))
-        break
-      }
-      case GQL.CONNECTION_ERROR: {
-        console.log(data.payload)
-        break
-      }
-      case GQL.DATA: {
-        console.log(data.payload.data.socialShopping.items[0]);
-        setProducts(prevProducts => [data.payload.data.socialShopping.items[0], ...prevProducts.slice(0, -1)]);
-        break
-      }
+  useEffect(() => {
+    console.log("products updated:", products);
+    ws_connection.onopen = function () {
+      ws_connection.send(JSON.stringify({ type: GQL.CONNECTION_INIT, payload: { portalId: 25, mandator: 406802, country: "ch", culture: "en-US" }}));
     };
-  };
+  
+    ws_connection.onmessage = function (event) {
+      const data = JSON.parse(event.data)
+      switch (data.type) {
+        case GQL.CONNECTION_ACK: {
+          if (wsSubscribed === false) {
+            console.log('sending subscription')
+            ws_connection.send(JSON.stringify({ id: 1, type: GQL.START, payload }));
+            setWsSubscribed(true);
+          }
+          break
+        }
+        case GQL.DATA: {
+          setProducts((products: any) => [...products, data.payload.data.socialShopping.items[0]]);
+          console.log('products should be updated', products);
+          break
+        }
+        case GQL.CONNECTION_ERROR: {
+          console.log(data.payload)
+          break
+        }
+      };
+    };
+  });
 
   if (products.length === 0) {
+    console.log("no products yet, loading...");
     return <div className="main-container"><div className="card"><div style={{ textAlign: "center"}}>Loading...</div></div></div>;
   }
   return (
